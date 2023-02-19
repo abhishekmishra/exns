@@ -1,5 +1,8 @@
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #include <unistd.h>
 
@@ -13,6 +16,9 @@
 #define CLONE_NEWNET      0x40000000
 #define CLONE_NEWTIME     0x00000080
 #define NAMESPACES_LEN    8
+
+// NS paths construction
+#define PROC_DIR          "/proc"
 
 typedef struct {
     int flag;
@@ -49,6 +55,14 @@ namespace_t NAMESPACES[] = {
 
 int main(int argc, char* argv[])
 {
+    char* path_str = (char*) calloc(sizeof(char), PATH_MAX);
+    if(path_str == NULL)
+    {
+        fprintf(stderr, "Unable to allocate path string!\n");
+        exit(-1);
+    }
+    path_str[0] = '\0';
+
     printf("exns\n");
     printf("PID = %d, PPID = %d\n", getpid(), getppid());
 
