@@ -1,9 +1,14 @@
-.PHONY:	all clean exns.o exns
+.PHONY:	all build run clean exns.o exns
 
 CC = gcc
 CFLAGS = -std=c99 -Wall -g
 
-all:	exns
+all:	build
+
+build:	exns
+
+run:
+	./exns
 
 exns:	exns.o
 	$(CC) $(CFLAGS) -o exns exns.o
