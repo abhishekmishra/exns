@@ -1,13 +1,16 @@
 .PHONY:	all clean exns.o exns
 
+CC = gcc
+CFLAGS = -std=c99 -Wall -g
+
 all:	exns
 
 exns:	exns.o
-	gcc -o exns exns.o
+	$(CC) $(CFLAGS) -o exns exns.o
 
 exns.o:	exns.c
-	gcc -c exns.c
+	$(CC) $(CFLAGS) -c exns.c
 
 clean:
-	rm *.o
-	rm exns
+	rm -f *.o
+	rm -f exns
