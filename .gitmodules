@@ -1,0 +1,6 @@
+[submodule "coll"]
+	path = coll
+	url = git@github.com:abhishekmishra/coll.git
+[submodule "zclk"]
+	path = zclk
+	url = git@github.com:abhishekmishra/zclk.git
