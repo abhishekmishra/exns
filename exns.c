@@ -1,3 +1,18 @@
+/**
+ * @file exns.c
+ *
+ * Parts of this file are heavily based on the go program by Michael Kerrisk
+ * for listing namespaces.
+ * see https://man7.org/tlpi/code/online/dist/namespaces/namespaces_of.go.html
+ *
+ * I've re-written this program in C because I needed this program, and didn't
+ * have a go environment setup on my linux machines. Also I don't know go
+ * so I could only make guesses at some of the functionality in the code.
+ *
+ * This is also a good way to learn about namespaces by re-implementing the
+ * namespace listing code.
+ *
+ */
 #define _GNU_SOURCE
 
 #include <stdio.h>
@@ -30,7 +45,7 @@
 typedef struct {
     int flag;
     char* name;
-} namespace_t;
+} ns_type_t;
 
 // Globals
 
@@ -42,7 +57,7 @@ char EXNS_PATH_STR[PATH_MAX] = { '\0' };
 char* EXNS_SYS_NS[NAMESPACES_LEN + 1] = { NULL };
 
 /** All namespaces pairs (API flag, name) possible in linux */
-namespace_t ALL_NS[] = {
+ns_type_t ALL_NS[] = {
     {
         CLONE_NEWNS, "mnt"
     },
