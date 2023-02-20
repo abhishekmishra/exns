@@ -1,8 +1,8 @@
 .PHONY:	all build run clean exns.o exns
 
 CC = gcc
-CFLAGS = -std=c99 -Wall -g -Icoll/src -Izclk/src `pkg-config --cflags lua5.4`
-LIBS = `pkg-config --libs lua5.4`
+CFLAGS = -std=c99 -Wall -g -Icoll/src -Izclk/src `pkg-config --cflags lua5.3`
+LIBS = `pkg-config --libs lua5.3`
 
 # get all zclk object targets based on all source files in zclk/src
 # this is based on example in https://web.mit.edu/gnu/doc/html/make_4.html#SEC24
