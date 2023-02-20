@@ -13,6 +13,7 @@
  * namespace listing code.
  *
  */
+
 #define _GNU_SOURCE
 
 #include <stdio.h>
@@ -62,6 +63,16 @@ typedef struct {
     char* uid_map;          ///> UID Map (User NSs only)
     char* gid_map;          ///> GID Map (User NSs only)
 } ns_t;
+
+typedef struct {
+    ns_id_t* ns_id;
+    ns_t* ns;
+} ns_ls_entry_t;
+
+typedef struct {
+    arraylist* ns_ls;
+    ns_id_t* root_ns;
+} ns_info_t;
 
 // Globals
 
