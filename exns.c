@@ -23,6 +23,8 @@
 #include <unistd.h>
 #include <dirent.h>
 
+#include <coll_arraylist.h>
+
 // Namespace types returned by NS_GET_NSTYPE.
 #define CLONE_NEWNS       0x00020000
 #define CLONE_NEWCGROUP   0x02000000
@@ -46,6 +48,20 @@ typedef struct {
     int flag;
     char* name;
 } ns_type_t;
+
+typedef struct {
+    int inode;
+    int device;
+} ns_id_t;
+
+typedef struct {
+    int ns_type;            ///> CLONE_NEW*
+    arraylist* pids;        ///> Member processes
+    arraylist* children;    ///> Child+owned namespaces (user/PID NSs only)
+    int creator_id;         ///> Userid of creator (User NSs only)
+    char* uid_map;          ///> UID Map (User NSs only)
+    char* gid_map;          ///> GID Map (User NSs only)
+} ns_t;
 
 // Globals
 
