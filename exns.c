@@ -117,6 +117,14 @@ char* get_ns_name_by_flag(int flag)
  * This is done to ensure only namespaces available in the current
  * linux kernel are used while listing namespaces.
  *
+ * The list of namespaces is fetched from the /proc/self/ns directory
+ * which is the namespace directory on the /proc file-system of the
+ * current process.
+ *
+ * There might be non-namespace directories in the directory, therefore
+ * they are compared agains an existing list of all known linux namespace
+ * types.
+ *
  * @return error code
  */
 int get_ns_symlink_list()
