@@ -56,3 +56,5 @@ exns
 *.swp
 *~
 *.backup
+
+docs/
