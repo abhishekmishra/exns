@@ -1,4 +1,4 @@
-.PHONY:	all build run clean exns.o exns
+.PHONY:	all build run clean docs
 
 LUA_ENABLED=1
 CC = gcc
@@ -32,7 +32,11 @@ coll_arraylist.o:	coll/src/coll_arraylist.c
 coll_lualib_arraylist.o:	coll/src/coll_lualib_arraylist.c
 	$(CC) $(CFLAGS) -c coll/src/coll_lualib_arraylist.c
 
+docs:
+	doxygen
+
 clean:
 	rm -f *.o
 	rm -f zclk/src/*.o
 	rm -f exns
+	rm -fR ./docs
