@@ -90,10 +90,18 @@ typedef struct {
     ns_t* ns;
 } ns_ls_entry_t;
 
+int new_ns_ls_entry(ns_ls_entry_t **ent);
+
+void free_ns_ls_entry(ns_ls_entry_t *ent);
+
 typedef struct {
     arraylist* ns_ls;
     ns_id_t* root_ns;
 } ns_info_t;
+
+int new_ns_info(ns_info_t **nsinfo);
+
+void free_ns_info(ns_info_t *nsinfo);
 
 // Globals
 
@@ -354,4 +362,39 @@ ns_id_t* new_ns_id(int nsfd)
 void free_ns_id(ns_id_t* nsid)
 {
     free(nsid);
+}
+
+int new_ns_info(ns_info_t **nsinfo)
+{
+    ns_info_t *nsi = (ns_info_t *)calloc(1, sizeof(ns_info_t));
+    if(nsi == NULL)
+    {
+        fprintf(stderr, "Error allocating ns_info_t.\n");
+        return -1;
+    }
+
+    int res = arraylist_new(&nsi->ns_ls, &free_ns_ls_entry);
+    if(res != 0)
+    {
+        fprintf(stderr, "Error creating namespace list.\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+void free_ns_info(ns_info_t *nsinfo)
+{
+
+}
+
+int new_ns_ls_entry(ns_ls_entry_t **ent)
+{
+
+}
+
+void free_ns_ls_entry(ns_ls_entry_t *ent)
+{
+    //TODO: free members
+    free(ent);
 }
