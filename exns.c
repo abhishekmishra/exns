@@ -188,7 +188,7 @@ int get_ns_symlink_list();
  */
 int open_ns_symlink(int pid, char* ns_file);
 
-int exns_main()
+zclk_res exns_main(zclk_command* cmd, void* handler_args)
 {
     int res;
 
@@ -231,7 +231,10 @@ int exns_main()
 
 int main(int argc, char *argv[])
 {
-    
+    zclk_command *cmd = new_zclk_command(argv[0], "exns",
+                        "Linux Namespaces Explorer", &exns_main);
+
+    zclk_command_exec(cmd, NULL, argc, argv);
 
     exit(0);
 }
