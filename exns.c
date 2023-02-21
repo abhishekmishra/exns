@@ -227,6 +227,8 @@ zclk_res exns_main(zclk_command* cmd, void* handler_args)
     {
         close(nsfd);
     }
+    
+    return 0;
 }
 
 int main(int argc, char *argv[])
@@ -234,9 +236,18 @@ int main(int argc, char *argv[])
     zclk_command *cmd = new_zclk_command(argv[0], "exns",
                         "Linux Namespaces Explorer", &exns_main);
 
-    zclk_command_exec(cmd, NULL, argc, argv);
+    zclk_command_flag_option(
+        cmd,
+        "all-pids",
+        "a",
+        "For each displayed process, show PIDs in all namespaces of \
+		which the process is a member (used only in conjunction with \
+		\"--pidns\")."
+    );
+    
+    int res = zclk_command_exec(cmd, NULL, argc, argv);
 
-    exit(0);
+    return res;
 }
 
 int get_ns_flag_by_name(char* name)
@@ -382,7 +393,8 @@ int new_ns_info(ns_info_t **nsinfo)
         return -1;
     }
 
-    int res = arraylist_new(&nsi->ns_ls, &free_ns_ls_entry);
+    int res = arraylist_new(&nsi->ns_ls, 
+                            (void (*)(void *))&free_ns_ls_entry);
     if(res != 0)
     {
         fprintf(stderr, "Error creating namespace list.\n");
@@ -399,7 +411,7 @@ void free_ns_info(ns_info_t *nsinfo)
 
 int new_ns_ls_entry(ns_ls_entry_t **ent)
 {
-
+    return 0;
 }
 
 void free_ns_ls_entry(ns_ls_entry_t *ent)
