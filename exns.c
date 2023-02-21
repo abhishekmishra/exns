@@ -50,10 +50,29 @@ typedef struct {
     char* name;
 } ns_type_t;
 
+/**
+ * This type represents a namespace id,
+ * given by the inode id of the namespace fd, and it device id
+ */
 typedef struct {
-    int inode;
-    int device;
+    int inode;              ///> inode id of ns fd
+    int device;             ///> device id of ns fd
 } ns_id_t;
+
+/**
+ * @brief create and return a new namespace id, using the given ns fd.
+ *
+ * @param nsfd file descriptor of the namespace file
+ * @return new namespace id
+ */
+ns_id_t* new_ns_id(int nsfd);
+
+/**
+ * @brief free the given namespace id
+ *
+ * @param nsid to free
+ */
+void free_ns_id(ns_id_t* nsid);
 
 typedef struct {
     int ns_type;            ///> CLONE_NEW*
@@ -118,6 +137,67 @@ ns_type_t ALL_NS[] = {
  * @param name name of ns
  * @return flag
  */
+int get_ns_flag_by_name(char* name);
+
+/**
+ * Get the ns name given flag
+ * (return NULL if not found)
+ *
+ * @param flag flag of ns
+ * @return name of ns
+ */
+char *get_ns_name_by_flag(int flag);
+
+/**
+ * Updates the list of system namespaces in EXNS_SYS_NS.
+ * This is done to ensure only namespaces available in the current
+ * linux kernel are used while listing namespaces.
+ *
+ * The list of namespaces is fetched from the /proc/self/ns directory
+ * which is the namespace directory on the /proc file-system of the
+ * current process.
+ *
+ * There might be non-namespace directories in the directory, therefore
+ * they are compared agains an existing list of all known linux namespace
+ * types.
+ *
+ * @return error code
+ */
+int get_ns_symlink_list();
+
+int main(int argc, char* argv[])
+{
+    int res;
+
+    printf("Process PID = %d, PPID = %d\n", getpid(), getppid());
+
+    //for(int i = 0; i < NAMESPACES_LEN; i++)
+    //{
+    //    printf("%s\n", ALL_NS[i].name);
+    //}
+
+    // load the system available namespaces
+    res = get_ns_symlink_list();
+
+    // if there was an error getting list of system namespaces
+    if(res != 0)
+    {
+        exit(-1);
+    }
+
+    printf("Namespace types available on this system are:\n");
+    for(int i = 0; i < NAMESPACES_LEN+1; i++)
+    {
+        if(EXNS_SYS_NS[i] == NULL)
+        {
+            break;
+        }
+        printf("%s\n", EXNS_SYS_NS[i]);
+    }
+
+    exit(0);
+}
+
 int get_ns_flag_by_name(char* name)
 {
     if(name == NULL)
@@ -135,13 +215,6 @@ int get_ns_flag_by_name(char* name)
     return -1;
 }
 
-/**
- * Get the ns name given flag
- * (return NULL if not found)
- *
- * @param flag flag of ns
- * @return name of ns
- */
 char* get_ns_name_by_flag(int flag)
 {
     for(int i = 0; i < NAMESPACES_LEN; i++)
@@ -154,21 +227,6 @@ char* get_ns_name_by_flag(int flag)
     return NULL;
 }
 
-/**
- * Updates the list of system namespaces in EXNS_SYS_NS.
- * This is done to ensure only namespaces available in the current
- * linux kernel are used while listing namespaces.
- *
- * The list of namespaces is fetched from the /proc/self/ns directory
- * which is the namespace directory on the /proc file-system of the
- * current process.
- *
- * There might be non-namespace directories in the directory, therefore
- * they are compared agains an existing list of all known linux namespace
- * types.
- *
- * @return error code
- */
 int get_ns_symlink_list()
 {
     char* self_pid_path = "/proc/self/ns/";
@@ -227,38 +285,4 @@ int get_ns_symlink_list()
     }
 
     return 0;
-}
-
-
-int main(int argc, char* argv[])
-{
-    int res;
-
-    printf("Process PID = %d, PPID = %d\n", getpid(), getppid());
-
-    //for(int i = 0; i < NAMESPACES_LEN; i++)
-    //{
-    //    printf("%s\n", ALL_NS[i].name);
-    //}
-
-    // load the system available namespaces
-    res = get_ns_symlink_list();
-
-    // if there was an error getting list of system namespaces
-    if(res != 0)
-    {
-        exit(-1);
-    }
-
-    printf("Namespace types available on this system are:\n");
-    for(int i = 0; i < NAMESPACES_LEN+1; i++)
-    {
-        if(EXNS_SYS_NS[i] == NULL)
-        {
-            break;
-        }
-        printf("%s\n", EXNS_SYS_NS[i]);
-    }
-
-    exit(0);
 }
