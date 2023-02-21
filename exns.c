@@ -27,6 +27,7 @@
 #include <fcntl.h>
 
 #include <coll_arraylist.h>
+#include <zclk.h>
 
 // Namespace types returned by NS_GET_NSTYPE.
 #define CLONE_NEWNS       0x00020000
@@ -187,7 +188,7 @@ int get_ns_symlink_list();
  */
 int open_ns_symlink(int pid, char* ns_file);
 
-int main(int argc, char* argv[])
+int exns_main()
 {
     int res;
 
@@ -226,6 +227,11 @@ int main(int argc, char* argv[])
     {
         close(nsfd);
     }
+}
+
+int main(int argc, char *argv[])
+{
+    
 
     exit(0);
 }
