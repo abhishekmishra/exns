@@ -2,8 +2,8 @@
 
 LUA_ENABLED=1
 CC = gcc
-CFLAGS = -std=c99 -Wall -g -Icoll/src -Izclk/src `pkg-config --cflags lua5.3` -D LUA_ENABLED
-LIBS = `pkg-config --libs lua5.3`
+CFLAGS = -std=c99 -Wall -g -Icoll/src -Izclk/src `pkg-config --cflags lua5.4` -D LUA_ENABLED
+LIBS = `pkg-config --libs lua5.4`
 
 # get all zclk object targets based on all source files in zclk/src
 # this is based on example in https://web.mit.edu/gnu/doc/html/make_4.html#SEC24
