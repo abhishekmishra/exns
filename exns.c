@@ -23,6 +23,8 @@
 
 #include <unistd.h>
 #include <dirent.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include <coll_arraylist.h>
 
@@ -55,8 +57,8 @@ typedef struct {
  * given by the inode id of the namespace fd, and it device id
  */
 typedef struct {
-    int inode;              ///> inode id of ns fd
-    int device;             ///> device id of ns fd
+    uintmax_t inode;              ///> inode id of ns fd
+    uintmax_t device;             ///> device id of ns fd
 } ns_id_t;
 
 /**
@@ -165,6 +167,18 @@ char *get_ns_name_by_flag(int flag);
  */
 int get_ns_symlink_list();
 
+/**
+ * @brief  opens a user or PID namespace symlink 
+ * (specified in 'ns_file') 
+ * for the process with the specified 'pid' and returns the resulting
+ * file descriptor.
+ * 
+ * @param pid process id
+ * @param ns_file the namespace file
+ * @return fd file descriptor
+ */
+int open_ns_symlink(int pid, char* ns_file);
+
 int main(int argc, char* argv[])
 {
     int res;
@@ -193,6 +207,16 @@ int main(int argc, char* argv[])
             break;
         }
         printf("%s\n", EXNS_SYS_NS[i]);
+    }
+
+    int nsfd = open_ns_symlink(getpid(), "mnt");
+    ns_id_t *nsid = new_ns_id(nsfd);
+
+    printf("fd is %d, dev=%jx, inode=%ju\n", nsfd, nsid->device, nsid->inode);
+
+    if (nsfd > 0)
+    {
+        close(nsfd);
     }
 
     exit(0);
@@ -283,6 +307,51 @@ int get_ns_symlink_list()
         fprintf(stderr, "Failed to close directory.\n");
         return -1;
     }
-
+    
     return 0;
+}
+
+int open_ns_symlink(int pid, char* ns_file)
+{
+    snprintf(EXNS_PATH_STR, PATH_MAX, "/proc/%d/ns/%s", pid, ns_file);
+    printf("Path is %s\n", EXNS_PATH_STR);
+
+    int nsfd = open(EXNS_PATH_STR, O_RDONLY, 0);
+    if(nsfd < 0)
+    {
+        fprintf(stderr,
+                "Error finding namespace subtree for PID:%d at %s\n",
+               pid,
+               EXNS_PATH_STR);
+        return -1;
+    }
+    return nsfd;
+}
+
+ns_id_t* new_ns_id(int nsfd)
+{
+    struct stat nsfd_stat;
+    int res = fstat(nsfd, &nsfd_stat);
+    if(res != 0)
+    {
+        fprintf(stderr, "Error getting stat for fd %d.\n", nsfd);
+        return NULL;
+    }
+
+    ns_id_t *nsid = (ns_id_t *)calloc(1, sizeof(ns_id_t));
+    if(nsid == NULL)
+    {
+        fprintf(stderr, "Unable to allocate struct ns_id_t!\n");
+        return NULL;
+    }
+    
+    nsid->device = nsfd_stat.st_dev;
+    nsid->inode = nsfd_stat.st_ino;
+
+    return nsid;
+}
+
+void free_ns_id(ns_id_t* nsid)
+{
+    free(nsid);
 }
