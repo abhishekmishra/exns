@@ -239,12 +239,79 @@ int main(int argc, char *argv[])
     zclk_command_flag_option(
         cmd,
         "all-pids",
-        "a",
-        "For each displayed process, show PIDs in all namespaces of \
-		which the process is a member (used only in conjunction with \
-		\"--pidns\")."
+        NULL,
+        "For each displayed process, show PIDs in all namespaces of "
+		"which the process is a member (used only in conjunction with "
+		"\"--pidns\")."
     );
-    
+
+    zclk_command_flag_option(
+        cmd,
+        "--deep-scan",
+        NULL,
+        "Also show namespaces pinned into existence for reasons other"
+		"than having member processes, being an owning user namespace,"
+		"or being an ancestor (user or PID) namespace. This includes"
+		"namespaces that are pinned into existence by bind mounts, by"
+		"open file desciptors, and by 'pid_for_children' or"
+		"'time_for_children' symlinks."
+    );
+
+    zclk_command_flag_option(
+        cmd,
+        "no-color",
+        NULL,
+        "Suppress the use of color in the displayed output."
+    );
+
+    zclk_command_flag_option(
+        cmd,
+        "no-pids",
+        NULL,
+        "Suppress the display of the processes that are members of each"
+        "namespace."
+    );
+
+    zclk_command_flag_option(
+        cmd,
+        "pidns",
+        NULL,
+        "Display the PID namespace hierarchy (rather than the user"
+        "namespace hierarchy)."
+    );
+
+    zclk_command_flag_option(
+        cmd,
+        "search-tasks",
+        NULL,
+        "Look for namespaces via /proc/PID/task/*/ns/* rather than"
+		"/proc/PID/ns/*. (Does more work in order to find namespaces"
+		"that may be occupied by noninitial threads.) Also causes"
+		"member TIDs (rather than PIDs) to be displayed for each"
+		"namespace."
+    );
+
+    zclk_command_flag_option(
+        cmd,
+        "show-comm",
+        NULL,
+        "Displays the command being run by each process."
+    );
+
+    zclk_command_string_argument(
+        cmd,
+        "namespaces",
+        NULL,
+        "Show just the listed namespace types when displaying the"
+        "user namespace hierarchy. <list> is a comma-separated list"
+        "containing one or more of \"cgroup\", \"ipc\", \"mnt\", \"net\", \"pid\","
+        "\"time\", \"user\", and \"uts\". (The default is to include all"
+        "nonuser namespace types in the display of the user namespace"
+        "hierarchy.) To see just the user namespace hierarchy, use"
+        "\"--namespaces=user\".",
+        1
+    );
+
     int res = zclk_command_exec(cmd, NULL, argc, argv);
 
     return res;
