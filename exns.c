@@ -188,6 +188,10 @@ int get_ns_symlink_list();
  */
 int open_ns_symlink(int pid, char* ns_file);
 
+int add_ns_for_all_procs(ns_info_t *nsinfo, zclk_command* cmd);
+
+int add_ns_for_one_proc(char* pid, zclk_command* cmd);
+
 zclk_res exns_main(zclk_command* cmd, void* handler_args)
 {
     int res;
@@ -227,7 +231,11 @@ zclk_res exns_main(zclk_command* cmd, void* handler_args)
     {
         close(nsfd);
     }
-    
+
+    ns_info_t *nsinfo;
+    new_ns_info(&nsinfo);
+    res = add_ns_for_all_procs(nsinfo, cmd);
+
     return 0;
 }
 
@@ -402,7 +410,7 @@ int get_ns_symlink_list()
         fprintf(stderr, "Failed to close directory.\n");
         return -1;
     }
-    
+
     return 0;
 }
 
@@ -485,4 +493,72 @@ void free_ns_ls_entry(ns_ls_entry_t *ent)
 {
     //TODO: free members
     free(ent);
+}
+
+int add_ns_for_all_procs(ns_info_t *nsinfo, zclk_command* cmd)
+{
+    char *proc_dir = "/proc";
+    DIR *dirp;
+    struct dirent *dent;
+
+    // open the /proc directory
+    dirp = opendir(proc_dir);
+    if (dirp == NULL)
+    {
+        fprintf(stderr, "Open directory failed for path %s.\n", proc_dir);
+        return -1;
+    }
+
+    // loop till no further directory entries are found
+    for (;;)
+    {
+        // read the next directory entry
+        dent = readdir(dirp);
+
+        // if there is no directory entry returned, exit the loop
+        if (dent == NULL)
+        {
+            break;
+        }
+
+        // ignore "." and ".." directory entries as they cannot be namespaces
+        if (strcmp(dent->d_name, ".") == 0 || strcmp(dent->d_name, "..") == 0)
+        {
+            continue;               /* Skip . and .. */
+        }
+
+        if(dent->d_name[0] >= '1' && dent->d_name[0] <= '9')
+        {
+            printf("found pid dir %s\n", dent->d_name);
+            add_ns_for_one_proc(dent->d_name, cmd);
+        }
+        //dent->d_name
+    }
+
+    // close the directory and return
+    if (closedir(dirp) == -1)
+    {
+        fprintf(stderr, "Failed to close directory.\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+int add_ns_for_one_proc(char* pid, zclk_command* cmd)
+{
+    int search_tasks = zclk_option_get_val_bool(
+        zclk_command_get_option(cmd, "search-tasks")
+    );
+
+    if(search_tasks != 0)
+    {
+
+    }
+    else
+    {
+        printf("Use pids not tasks\n");
+    }
+
+    return 0;
 }

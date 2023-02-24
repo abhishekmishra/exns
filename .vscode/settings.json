@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "coll_arraylist.h": "c"
+        "coll_arraylist.h": "c",
+        "zclk.h": "c"
     }
 }
