@@ -192,6 +192,12 @@ int add_ns_for_all_procs(ns_info_t *nsinfo, zclk_command* cmd);
 
 int add_ns_for_one_proc(char* pid, zclk_command* cmd);
 
+int add_the_ns(char *id, zclk_command *cmd);
+
+int add_proc_ns(char *pid, char *ns_file, zclk_command *cmd);
+
+int add_pinned_ns(char *pid, zclk_command *cmd);
+
 zclk_res exns_main(zclk_command* cmd, void* handler_args)
 {
     int res;
