@@ -177,8 +177,8 @@ char *get_ns_name_by_flag(int flag);
 int get_ns_symlink_list();
 
 /**
- * @brief  opens a user or PID namespace symlink 
- * (specified in 'ns_file') 
+ * @brief  opens a user or PID namespace symlink
+ * (specified in 'ns_file')
  * for the process with the specified 'pid' and returns the resulting
  * file descriptor.
  * 
@@ -255,8 +255,8 @@ int main(int argc, char *argv[])
         "all-pids",
         NULL,
         "For each displayed process, show PIDs in all namespaces of "
-		"which the process is a member (used only in conjunction with "
-		"\"--pidns\")."
+        "which the process is a member (used only in conjunction with "
+        "\"--pidns\")."
     );
 
     zclk_command_flag_option(
@@ -264,11 +264,11 @@ int main(int argc, char *argv[])
         "--deep-scan",
         NULL,
         "Also show namespaces pinned into existence for reasons other"
-		"than having member processes, being an owning user namespace,"
-		"or being an ancestor (user or PID) namespace. This includes"
-		"namespaces that are pinned into existence by bind mounts, by"
-		"open file desciptors, and by 'pid_for_children' or"
-		"'time_for_children' symlinks."
+        "than having member processes, being an owning user namespace,"
+        "or being an ancestor (user or PID) namespace. This includes"
+        "namespaces that are pinned into existence by bind mounts, by"
+        "open file desciptors, and by 'pid_for_children' or"
+        "'time_for_children' symlinks."
     );
 
     zclk_command_flag_option(
@@ -299,10 +299,10 @@ int main(int argc, char *argv[])
         "search-tasks",
         NULL,
         "Look for namespaces via /proc/PID/task/*/ns/* rather than"
-		"/proc/PID/ns/*. (Does more work in order to find namespaces"
-		"that may be occupied by noninitial threads.) Also causes"
-		"member TIDs (rather than PIDs) to be displayed for each"
-		"namespace."
+        "/proc/PID/ns/*. (Does more work in order to find namespaces"
+        "that may be occupied by noninitial threads.) Also causes"
+        "member TIDs (rather than PIDs) to be displayed for each"
+        "namespace."
     );
 
     zclk_command_flag_option(
@@ -453,7 +453,7 @@ ns_id_t* new_ns_id(int nsfd)
         fprintf(stderr, "Unable to allocate struct ns_id_t!\n");
         return NULL;
     }
-    
+
     nsid->device = nsfd_stat.st_dev;
     nsid->inode = nsfd_stat.st_ino;
 
@@ -591,7 +591,7 @@ int add_ns_for_one_proc(ns_info_t *nsinfo, char* pid, zclk_command* cmd)
             }
 
             add_the_ns(nsinfo, dent->d_name, cmd);
-            
+
             //dent->d_name
         }
 
@@ -601,7 +601,7 @@ int add_ns_for_one_proc(ns_info_t *nsinfo, char* pid, zclk_command* cmd)
             fprintf(stderr, "Failed to close directory.\n");
             return -1;
         }
-        
+
     }
     else
     {
