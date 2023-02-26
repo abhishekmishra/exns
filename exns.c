@@ -194,7 +194,7 @@ int add_ns_for_one_proc(ns_info_t *nsinfo, char* pid, zclk_command* cmd);
 
 int add_the_ns(ns_info_t *nsinfo, char *id, zclk_command *cmd);
 
-int add_proc_ns(ns_info_t *nsinfo, char *pid, char *ns_file, zclk_command *cmd);
+int add_proc_ns(ns_info_t *nsinfo, char *pid, char *ns_file, zclk_command *cmd, int is_cmdline_arg);
 
 int add_pinned_ns(ns_info_t *nsinfo, char *pid, zclk_command *cmd);
 
@@ -560,6 +560,7 @@ int add_ns_for_one_proc(ns_info_t *nsinfo, char* pid, zclk_command* cmd)
     if(search_tasks != 0)
     {
         snprintf(EXNS_PATH_STR, PATH_MAX, "/proc/%s/task", pid);
+        printf("task folder -> %s\n", EXNS_PATH_STR);
         DIR *dirp;
         struct dirent *dent;
 
@@ -614,10 +615,29 @@ int add_ns_for_one_proc(ns_info_t *nsinfo, char* pid, zclk_command* cmd)
 
 int add_the_ns(ns_info_t *nsinfo, char *id, zclk_command *cmd)
 {
+    printf("Namespace types available on this system are:\n");
+    for(int i = 0; i < NAMESPACES_LEN+1; i++)
+    {
+        if(EXNS_SYS_NS[i] == NULL)
+        {
+            break;
+        }
+        printf("pid=%s, ns=%s\n", id, EXNS_SYS_NS[i]);
+        add_proc_ns(nsinfo, id, EXNS_SYS_NS[i], cmd, 0);
+    }
+
+    int deep_scan = zclk_option_get_val_bool(
+        zclk_command_get_option(cmd, "deep-scan")
+    );
+
+    if (deep_scan != 0)
+    {
+        add_pinned_ns(nsinfo, id, cmd);
+    }
     return 0;
 }
 
-int add_proc_ns(ns_info_t *nsinfo, char *pid, char *ns_file, zclk_command *cmd)
+int add_proc_ns(ns_info_t *nsinfo, char *pid, char *ns_file, zclk_command *cmd, int is_cmdline_arg)
 {
     return 0;
 }
