@@ -25,6 +25,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #include <coll_arraylist.h>
 #include <zclk.h>
@@ -181,7 +182,7 @@ int get_ns_symlink_list();
  * (specified in 'ns_file')
  * for the process with the specified 'pid' and returns the resulting
  * file descriptor.
- * 
+ *
  * @param pid process id
  * @param ns_file the namespace file
  * @return fd file descriptor
@@ -197,6 +198,8 @@ int add_the_ns(ns_info_t *nsinfo, char *id, zclk_command *cmd);
 int add_proc_ns(ns_info_t *nsinfo, char *pid, char *ns_file, zclk_command *cmd, int is_cmdline_arg);
 
 int add_pinned_ns(ns_info_t *nsinfo, char *pid, zclk_command *cmd);
+
+int add_ns(ns_info_t *nsinfo, int npid, zclk_command *cmd);
 
 zclk_res exns_main(zclk_command* cmd, void* handler_args)
 {
@@ -615,15 +618,19 @@ int add_ns_for_one_proc(ns_info_t *nsinfo, char* pid, zclk_command* cmd)
 
 int add_the_ns(ns_info_t *nsinfo, char *id, zclk_command *cmd)
 {
-    printf("Namespace types available on this system are:\n");
+    int res = 0;
     for(int i = 0; i < NAMESPACES_LEN+1; i++)
     {
         if(EXNS_SYS_NS[i] == NULL)
         {
             break;
         }
-        printf("pid=%s, ns=%s\n", id, EXNS_SYS_NS[i]);
-        add_proc_ns(nsinfo, id, EXNS_SYS_NS[i], cmd, 0);
+        //printf("pid=%s, ns=%s\n", id, EXNS_SYS_NS[i]);
+        res = add_proc_ns(nsinfo, id, EXNS_SYS_NS[i], cmd, 0);
+        if(res != 0)
+        {
+            return res;
+        }
     }
 
     int deep_scan = zclk_option_get_val_bool(
@@ -632,12 +639,48 @@ int add_the_ns(ns_info_t *nsinfo, char *id, zclk_command *cmd)
 
     if (deep_scan != 0)
     {
-        add_pinned_ns(nsinfo, id, cmd);
+        res = add_pinned_ns(nsinfo, id, cmd);
     }
-    return 0;
+
+    return res;
 }
 
 int add_proc_ns(ns_info_t *nsinfo, char *pid, char *ns_file, zclk_command *cmd, int is_cmdline_arg)
+{
+    snprintf(EXNS_PATH_STR, PATH_MAX, "/proc/%s/ns/%s", pid, ns_file);
+    printf("Path is %s\n", EXNS_PATH_STR);
+
+    int nsfd = open(EXNS_PATH_STR, O_RDONLY, 0);
+    if(nsfd < 0)
+    {
+        if(errno == EACCES)
+        {
+            fprintf(stderr, "Cannot access %s, please run with root.\n",
+                    EXNS_PATH_STR);
+            return -1;
+        }
+        else
+        {
+            fprintf(stderr,
+                 "Error finding namespace subtree for PID:%s at %s, errno=%d\n"
+                 "Process %s terminated while parsing?\n",
+                 pid,
+                 EXNS_PATH_STR,
+                 errno,
+                 pid);
+            return -1;
+        }
+    }
+
+    int npid = atoi(pid);
+    int res = add_ns(nsinfo, npid, cmd);
+
+    close(nsfd);
+
+    return res;
+}
+
+int add_ns(ns_info_t *nsinfo, int npid, zclk_command *cmd)
 {
     return 0;
 }
