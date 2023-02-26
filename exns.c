@@ -92,8 +92,19 @@ typedef struct {
     ns_t* ns;
 } ns_ls_entry_t;
 
+/**
+ * @brief create a new namespaces list entry
+ *
+ * @param ent namespace entry to create
+ * @return error code
+ */
 int new_ns_ls_entry(ns_ls_entry_t **ent);
 
+/**
+ * @brief free the namespaces list entry
+ *
+ * @param ent entry to free
+ */
 void free_ns_ls_entry(ns_ls_entry_t *ent);
 
 typedef struct {
@@ -101,9 +112,29 @@ typedef struct {
     ns_id_t* root_ns;
 } ns_info_t;
 
+/**
+ * @brief Create a new namespace info
+ *
+ * @param nsinfo namespace info to create
+ * @return error code
+ */
 int new_ns_info(ns_info_t **nsinfo);
 
+/**
+ * @brief free the namespace info
+ *
+ * @param nsinfo namespace info to free
+ */
 void free_ns_info(ns_info_t *nsinfo);
+
+/**
+ * @brief check if the given nsid is already in the info's ns list
+ *
+ * @param nsinfo info
+ * @param nsid id to look for
+ * @return boolean indicating wheter nsid was found
+ */
+int has_ns_id(ns_info_t *nsinfo, ns_id_t* nsid);
 
 // Globals
 
@@ -199,7 +230,7 @@ int add_proc_ns(ns_info_t *nsinfo, char *pid, char *ns_file, zclk_command *cmd, 
 
 int add_pinned_ns(ns_info_t *nsinfo, char *pid, zclk_command *cmd);
 
-int add_ns(ns_info_t *nsinfo, int npid, zclk_command *cmd);
+int add_ns(ns_info_t *nsinfo, int nsfd, int npid, zclk_command *cmd);
 
 zclk_res exns_main(zclk_command* cmd, void* handler_args)
 {
@@ -673,15 +704,16 @@ int add_proc_ns(ns_info_t *nsinfo, char *pid, char *ns_file, zclk_command *cmd, 
     }
 
     int npid = atoi(pid);
-    int res = add_ns(nsinfo, npid, cmd);
+    int res = add_ns(nsinfo, nsfd, npid, cmd);
 
     close(nsfd);
 
     return res;
 }
 
-int add_ns(ns_info_t *nsinfo, int npid, zclk_command *cmd)
+int add_ns(ns_info_t *nsinfo, int nsfd, int npid, zclk_command *cmd)
 {
+    ns_id_t* nsid = new_ns_id(nsfd);
     return 0;
 }
 
