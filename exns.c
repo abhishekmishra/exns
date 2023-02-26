@@ -567,7 +567,7 @@ int add_ns_for_one_proc(ns_info_t *nsinfo, char* pid, zclk_command* cmd)
         dirp = opendir(EXNS_PATH_STR);
         if (dirp == NULL)
         {
-            fprintf(stderr, 
+            fprintf(stderr,
                     "Open directory failed for path %s.\n", EXNS_PATH_STR);
             return -1;
         }
