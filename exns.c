@@ -190,13 +190,13 @@ int open_ns_symlink(int pid, char* ns_file);
 
 int add_ns_for_all_procs(ns_info_t *nsinfo, zclk_command* cmd);
 
-int add_ns_for_one_proc(char* pid, zclk_command* cmd);
+int add_ns_for_one_proc(ns_info_t *nsinfo, char* pid, zclk_command* cmd);
 
-int add_the_ns(char *id, zclk_command *cmd);
+int add_the_ns(ns_info_t *nsinfo, char *id, zclk_command *cmd);
 
-int add_proc_ns(char *pid, char *ns_file, zclk_command *cmd);
+int add_proc_ns(ns_info_t *nsinfo, char *pid, char *ns_file, zclk_command *cmd);
 
-int add_pinned_ns(char *pid, zclk_command *cmd);
+int add_pinned_ns(ns_info_t *nsinfo, char *pid, zclk_command *cmd);
 
 zclk_res exns_main(zclk_command* cmd, void* handler_args)
 {
@@ -551,7 +551,7 @@ int add_ns_for_all_procs(ns_info_t *nsinfo, zclk_command* cmd)
     return 0;
 }
 
-int add_ns_for_one_proc(char* pid, zclk_command* cmd)
+int add_ns_for_one_proc(ns_info_t *nsinfo, char* pid, zclk_command* cmd)
 {
     int search_tasks = zclk_option_get_val_bool(
         zclk_command_get_option(cmd, "search-tasks")
@@ -566,5 +566,10 @@ int add_ns_for_one_proc(char* pid, zclk_command* cmd)
         printf("Use pids not tasks\n");
     }
 
+    return 0;
+}
+
+int add_the_ns(ns_info_t *nsinfo, char *id, zclk_command *cmd)
+{
     return 0;
 }
