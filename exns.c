@@ -536,7 +536,7 @@ int add_ns_for_all_procs(ns_info_t *nsinfo, zclk_command* cmd)
         if(dent->d_name[0] >= '1' && dent->d_name[0] <= '9')
         {
             printf("found pid dir %s\n", dent->d_name);
-            add_ns_for_one_proc(dent->d_name, cmd);
+            add_ns_for_one_proc(nsinfo, dent->d_name, cmd);
         }
         //dent->d_name
     }
@@ -559,17 +559,70 @@ int add_ns_for_one_proc(ns_info_t *nsinfo, char* pid, zclk_command* cmd)
 
     if(search_tasks != 0)
     {
+        snprintf(EXNS_PATH_STR, PATH_MAX, "/proc/%s/task", pid);
+        DIR *dirp;
+        struct dirent *dent;
 
+        // open the /proc directory
+        dirp = opendir(EXNS_PATH_STR);
+        if (dirp == NULL)
+        {
+            fprintf(stderr, 
+                    "Open directory failed for path %s.\n", EXNS_PATH_STR);
+            return -1;
+        }
+
+        // loop till no further directory entries are found
+        for (;;)
+        {
+            // read the next directory entry
+            dent = readdir(dirp);
+
+            // if there is no directory entry returned, exit the loop
+            if (dent == NULL)
+            {
+                break;
+            }
+
+            // ignore "." and ".." directory entries as they cannot be namespaces
+            if (strcmp(dent->d_name, ".") == 0 || strcmp(dent->d_name, "..") == 0)
+            {
+                continue;               /* Skip . and .. */
+            }
+
+            add_the_ns(nsinfo, dent->d_name, cmd);
+            
+            //dent->d_name
+        }
+
+        // close the directory and return
+        if (closedir(dirp) == -1)
+        {
+            fprintf(stderr, "Failed to close directory.\n");
+            return -1;
+        }
+        
     }
     else
     {
         printf("Use pids not tasks\n");
+        add_the_ns(nsinfo, pid, cmd);
     }
 
     return 0;
 }
 
 int add_the_ns(ns_info_t *nsinfo, char *id, zclk_command *cmd)
+{
+    return 0;
+}
+
+int add_proc_ns(ns_info_t *nsinfo, char *pid, char *ns_file, zclk_command *cmd)
+{
+    return 0;
+}
+
+int add_pinned_ns(ns_info_t *nsinfo, char *pid, zclk_command *cmd)
 {
     return 0;
 }
