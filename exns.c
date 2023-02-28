@@ -626,12 +626,33 @@ int has_ns_id(ns_info_t *nsinfo, ns_id_t* nsid)
 
 int new_ns_ls_entry(ns_ls_entry_t **ent)
 {
+    ns_ls_entry_t *e = (ns_ls_entry_t *)calloc(1, sizeof(ns_ls_entry_t));
+    if(e == NULL)
+    {
+        fprintf(stderr, "Error allocating ns_ls_entry_t.\n");
+        return -1;
+    }
+
+    e->ns = NULL;
+    e->ns_id = NULL;
+
+    (*ent) = e;
+
     return 0;
 }
 
 void free_ns_ls_entry(ns_ls_entry_t *ent)
 {
-    //TODO: free members
+    if(ent->ns != NULL)
+    {
+        free_ns(ent->ns);
+    }
+    
+    if(ent->ns_id != NULL)
+    {
+        free_ns_id(ent->ns_id);
+    }
+
     free(ent);
 }
 
