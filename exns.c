@@ -852,6 +852,32 @@ int add_pinned_ns(ns_info_t *nsinfo, char *pid, zclk_command *cmd)
 int add_ns_to_ls(ns_info_t *nsinfo, ns_id_t *nsid, 
     int nsfd, zclk_command *cmd)
 {
+    int res;
+    ns_ls_entry_t *entry;
+    ns_t *ns;
+
+    /* create a new namespace list entry */
+    res = new_ns_ls_entry(&entry);
+    if(res != 0)
+    {
+        return res;
+    }
+
+    /* create a new namespace */
+    res = new_ns(&ns);
+    if(res != 0)
+    {
+        return res;
+    }
+
+    /* set namespace and id for entry */
+    entry->ns = ns;
+    entry->ns_id = nsid;
+
+    /* add entry to the namespaces list */
+    arraylist_add(nsinfo->ns_ls, entry);
+
+    printf("--> Added %zu:%zu to namespaces list.\n", nsid->device, nsid->inode);
 
     return 0;
 }
