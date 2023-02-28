@@ -226,11 +226,15 @@ int add_ns_for_one_proc(ns_info_t *nsinfo, char* pid, zclk_command* cmd);
 
 int add_the_ns(ns_info_t *nsinfo, char *id, zclk_command *cmd);
 
-int add_proc_ns(ns_info_t *nsinfo, char *pid, char *ns_file, zclk_command *cmd, int is_cmdline_arg);
+int add_proc_ns(ns_info_t *nsinfo, char *pid, char *ns_file, 
+    zclk_command *cmd, int is_cmdline_arg);
 
 int add_pinned_ns(ns_info_t *nsinfo, char *pid, zclk_command *cmd);
 
 int add_ns(ns_info_t *nsinfo, int nsfd, int npid, zclk_command *cmd);
+
+int add_ns_to_ls(ns_info_t *nsinfo, ns_id_t *nsid, 
+    int nsfd, zclk_command *cmd);
 
 zclk_res exns_main(zclk_command* cmd, void* handler_args)
 {
@@ -735,10 +739,23 @@ int add_proc_ns(ns_info_t *nsinfo, char *pid, char *ns_file, zclk_command *cmd, 
 int add_ns(ns_info_t *nsinfo, int nsfd, int npid, zclk_command *cmd)
 {
     ns_id_t* nsid = new_ns_id(nsfd);
+
+    int find = has_ns_id(nsinfo, nsid);
+    if(find == 0)
+    {
+        add_ns_to_ls(nsinfo, nsid, nsfd, cmd);
+    }
     return 0;
 }
 
 int add_pinned_ns(ns_info_t *nsinfo, char *pid, zclk_command *cmd)
 {
+    return 0;
+}
+
+int add_ns_to_ls(ns_info_t *nsinfo, ns_id_t *nsid, 
+    int nsfd, zclk_command *cmd)
+{
+
     return 0;
 }
