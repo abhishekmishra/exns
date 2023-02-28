@@ -87,6 +87,21 @@ typedef struct {
     char* gid_map;          ///> GID Map (User NSs only)
 } ns_t;
 
+/**
+ * @brief create a new namespace
+ * 
+ * @param ns namespace object to create and return
+ * @return int result code
+ */
+int new_ns(ns_t **ns);
+
+/**
+ * @brief free the namespace object
+ * 
+ * @param ns namespace to free
+ */
+void free_ns(ns_t *ns);
+
 typedef struct {
     ns_id_t* ns_id;
     ns_t* ns;
@@ -276,9 +291,15 @@ zclk_res exns_main(zclk_command* cmd, void* handler_args)
         close(nsfd);
     }
 
+    /* create a new namespace info */
     ns_info_t *nsinfo;
     new_ns_info(&nsinfo);
+
+    /* add namespaces to nsinfo for all processes according to options */
     res = add_ns_for_all_procs(nsinfo, cmd);
+
+    /* free the namespace info */
+    free_ns_info(nsinfo);
 
     return 0;
 }
@@ -475,6 +496,53 @@ int open_ns_symlink(int pid, char* ns_file)
     return nsfd;
 }
 
+int new_ns(ns_t **ns)
+{
+    ns_t *nsobj = (ns_t *)calloc(1, sizeof(ns_t));
+    if(nsobj == NULL)
+    {
+        fprintf(stderr, "Error allocating ns_t.\n");
+        return -1;
+    }
+
+    int res = arraylist_new(&nsobj->pids, &free);
+    if(res != 0)
+    {
+        fprintf(stderr, "Error creating pids list.\n");
+        return -1;
+    }
+
+    // TODO: decide list member type
+    res = arraylist_new(&nsobj->children, &free);
+    if(res != 0)
+    {
+        fprintf(stderr, "Error creating children list.\n");
+        return -1;
+    }
+
+    nsobj->gid_map = NULL;
+    nsobj->uid_map = NULL;
+
+    (*ns) = nsobj;
+
+    return 0;
+}
+
+void free_ns(ns_t *ns)
+{
+    arraylist_free(ns->pids);
+    arraylist_free(ns->children);
+    if(ns->gid_map != NULL)
+    {
+        free(ns->gid_map);
+    }
+    if(ns->uid_map != NULL)
+    {
+        free(ns->uid_map);
+    }
+    free(ns);
+}
+
 ns_id_t* new_ns_id(int nsfd)
 {
     struct stat nsfd_stat;
@@ -520,12 +588,19 @@ int new_ns_info(ns_info_t **nsinfo)
         return -1;
     }
 
+    (*nsinfo) = nsi;
+
     return 0;
 }
 
 void free_ns_info(ns_info_t *nsinfo)
 {
-
+    arraylist_free(nsinfo->ns_ls);
+    if(nsinfo->root_ns != NULL)
+    {
+        free(nsinfo->root_ns);
+    }
+    free(nsinfo);
 }
 
 int has_ns_id(ns_info_t *nsinfo, ns_id_t* nsid)
