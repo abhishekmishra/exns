@@ -251,6 +251,24 @@ int add_ns(ns_info_t *nsinfo, int nsfd, int npid, zclk_command *cmd);
 int add_ns_to_ls(ns_info_t *nsinfo, ns_id_t *nsid, 
     int nsfd, zclk_command *cmd);
 
+/**
+ * @brief Get the ns type of the given nsfd
+ * 
+ * @param nsfd namespace fd
+ * @param fail_on_err whether to fail on error
+ * @return int CLONE_NEW* constant for the given ns OR -1 if not found
+ */
+int get_ns_type(int nsfd, int fail_on_err);
+
+/**
+ * @brief Wrapper for ioctl call
+ * 
+ * @param fd file descriptor
+ * @param op operation
+ * @return int ioctl value
+ */
+int get_ioctl(int fd, int op);
+
 zclk_res exns_main(zclk_command* cmd, void* handler_args)
 {
     int res;
@@ -879,5 +897,15 @@ int add_ns_to_ls(ns_info_t *nsinfo, ns_id_t *nsid,
 
     printf("--> Added %zu:%zu to namespaces list.\n", nsid->device, nsid->inode);
 
+    return 0;
+}
+
+int get_ns_type(int nsfd, int fail_on_err)
+{
+    return 0;
+}
+
+int get_ioctl(int fd, int op)
+{
     return 0;
 }
