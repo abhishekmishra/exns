@@ -524,6 +524,27 @@ void free_ns_info(ns_info_t *nsinfo)
 
 }
 
+int has_ns_id(ns_info_t *nsinfo, ns_id_t* nsid)
+{
+    size_t len, i;
+    len = arraylist_length(nsinfo->ns_ls);
+    for (i = 0; i < len; i++)
+    {
+        ns_ls_entry_t *entry = 
+            (ns_ls_entry_t *)arraylist_get(nsinfo->ns_ls, i);
+        if(entry != NULL)
+        {
+            ns_id_t *oth = entry->ns_id;
+            if(oth->device == nsid->device 
+                && oth->inode == nsid->inode)
+            {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 int new_ns_ls_entry(ns_ls_entry_t **ent)
 {
     return 0;
