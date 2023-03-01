@@ -282,6 +282,14 @@ int get_ns_type(int nsfd, int fail_on_err);
  */
 int get_ioctl(int fd, int op);
 
+/**
+ * @brief get the creator UID of the user ns
+ * 
+ * @param nsfd fd of the namespace file
+ * @return int creator uid
+ */
+int get_creator_uid(int nsfd);
+
 zclk_res exns_main(zclk_command* cmd, void* handler_args)
 {
     int res;
@@ -961,6 +969,9 @@ int add_ns_to_ls(ns_info_t *nsinfo, ns_id_t *nsid,
     if(entry->ns->ns_type == CLONE_NEWUSER)
     {
         printf("UUUUUUUUUUU -> This is a user ns.\n");
+        entry->ns->creator_id = get_creator_uid(nsfd);
+        printf("UUUUUUUUUUU -> creator uid is %d.\n",
+               entry->ns->creator_id);
     }
 
     return 0;
@@ -989,4 +1000,20 @@ int get_ioctl(int fd, int op)
 {
     int ret = ioctl(fd, op, 0);
     return ret;
+}
+
+int get_creator_uid(int nsfd)
+{
+    int uid;
+    
+    int ret = ioctl(nsfd, NS_GET_OWNER_UID, &uid);
+    if(ret == -1)
+    {
+        fprintf(stderr, 
+                "Error getting NS_GET_OWNER_UID for fd %d.\n", 
+                nsfd);
+        exit(1);
+    }
+    
+    return uid;
 }
