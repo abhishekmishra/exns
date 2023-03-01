@@ -936,7 +936,11 @@ int add_ns_to_ls(ns_info_t *nsinfo, ns_id_t *nsid,
     int res;
     ns_ls_entry_t *entry;
     ns_t *ns;
-
+    int ioctl_op;
+    int show_pids_heirarcy = zclk_option_get_val_bool(
+        zclk_command_get_option(cmd, "pidns"));
+    int parent_fd;
+    
     /* create a new namespace list entry */
     res = new_ns_ls_entry(&entry);
     if(res != 0)
@@ -972,6 +976,26 @@ int add_ns_to_ls(ns_info_t *nsinfo, ns_id_t *nsid,
         entry->ns->creator_id = get_creator_uid(nsfd);
         printf("UUUUUUUUUUU -> creator uid is %d.\n",
                entry->ns->creator_id);
+    }
+    
+    /* get parent ns (for pid heirarcy use differnt op) */
+    ioctl_op = NS_GET_USERNS;
+	if (show_pids_heirarcy)
+    {
+		ioctl_op = NS_GET_PARENT;
+	}
+	
+	parent_fd = get_ioctl(nsfd, ioctl_op);
+    
+    if(parent_fd == -1)
+    {
+        // any error other than EPERM is unexpedted: exit with err
+        
+        if(errno != EPERM)
+        {
+            fprintf(stderr, "Error getting parent ns %d\n", errno);
+            exit(1);
+        }
     }
 
     return 0;
