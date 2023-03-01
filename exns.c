@@ -954,7 +954,14 @@ int add_ns_to_ls(ns_info_t *nsinfo, ns_id_t *nsid,
     entry->ns->ns_type = get_ns_type(nsfd, 1);
     printf("ns type is -> %d\n", entry->ns->ns_type);
 
-    printf("--> Added %zu:%zu to namespaces list.\n", nsid->device, nsid->inode);
+    printf("--> Added %zu:%zu to namespaces list.\n", 
+           nsid->device, nsid->inode);
+    
+    /* if this is a user ns, record user ID of the creator */
+    if(entry->ns->ns_type == CLONE_NEWUSER)
+    {
+        printf("UUUUUUUUUUU -> This is a user ns.\n");
+    }
 
     return 0;
 }
