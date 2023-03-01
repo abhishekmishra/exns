@@ -26,6 +26,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/ioctl.h>
+
+/* for NS_GET_NSTYPE */
+#include <linux/nsfs.h>
 
 #include <coll_arraylist.h>
 #include <zclk.h>
@@ -635,6 +639,8 @@ int has_ns_id(ns_info_t *nsinfo, ns_id_t* nsid)
             if(oth->device == nsid->device 
                 && oth->inode == nsid->inode)
             {
+                //printf("********** found nsid %zu, %zu\n", 
+                //    nsid->device, nsid->inode);
                 return 1;
             }
         }
@@ -708,7 +714,7 @@ int add_ns_for_all_procs(ns_info_t *nsinfo, zclk_command* cmd)
 
         if(dent->d_name[0] >= '1' && dent->d_name[0] <= '9')
         {
-            printf("found pid dir %s\n", dent->d_name);
+            printf("================ found pid dir %s\n", dent->d_name);
             add_ns_for_one_proc(nsinfo, dent->d_name, cmd);
         }
         //dent->d_name
@@ -855,7 +861,8 @@ int add_ns(ns_info_t *nsinfo, int nsfd, int npid, zclk_command *cmd)
     ns_id_t* nsid = new_ns_id(nsfd);
 
     int find = has_ns_id(nsinfo, nsid);
-    if(find == 0)
+    //printf("&&&&&&&& found = %d.\n", find);
+    if (find == 0)
     {
         add_ns_to_ls(nsinfo, nsid, nsfd, cmd);
     }
@@ -895,6 +902,10 @@ int add_ns_to_ls(ns_info_t *nsinfo, ns_id_t *nsid,
     /* add entry to the namespaces list */
     arraylist_add(nsinfo->ns_ls, entry);
 
+    /* set namespace type of entry */
+    entry->ns->ns_type = get_ns_type(nsfd, 1);
+    printf("ns type is -> %d\n", entry->ns->ns_type);
+
     printf("--> Added %zu:%zu to namespaces list.\n", nsid->device, nsid->inode);
 
     return 0;
@@ -902,10 +913,25 @@ int add_ns_to_ls(ns_info_t *nsinfo, ns_id_t *nsid,
 
 int get_ns_type(int nsfd, int fail_on_err)
 {
-    return 0;
+    int ns_type = get_ioctl(nsfd, NS_GET_NSTYPE);
+
+    if(ns_type == -1)
+    {
+        fprintf(stderr, "ioctl(NS_GET_NSTYPE) error %d.\n", errno);
+        if(fail_on_err != 0)
+        {
+            exit(1);
+        }
+        else
+        {
+            return -1;
+        }
+    }
+    return ns_type;
 }
 
 int get_ioctl(int fd, int op)
 {
-    return 0;
+    int ret = ioctl(fd, op, 0);
+    return ret;
 }
