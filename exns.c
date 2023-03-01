@@ -155,6 +155,15 @@ void free_ns_info(ns_info_t *nsinfo);
  */
 int has_ns_id(ns_info_t *nsinfo, ns_id_t* nsid);
 
+/**
+ * @brief Get the ns corresponding to the values in the passed nsid
+ * 
+ * @param nsinfo info
+ * @param nsid id to look for
+ * @return ns_t* found ns (or NULL)
+ */
+ns_t *get_ns_for_id(ns_info_t *nsinfo, ns_id_t *nsid);
+
 // Globals
 
 /** path string for use in all methods */
@@ -648,6 +657,27 @@ int has_ns_id(ns_info_t *nsinfo, ns_id_t* nsid)
     return 0;
 }
 
+ns_t *get_ns_for_id(ns_info_t *nsinfo, ns_id_t *nsid)
+{
+    size_t len, i;
+    len = arraylist_length(nsinfo->ns_ls);
+    for (i = 0; i < len; i++)
+    {
+        ns_ls_entry_t *entry = 
+            (ns_ls_entry_t *)arraylist_get(nsinfo->ns_ls, i);
+        if(entry != NULL)
+        {
+            ns_id_t *oth = entry->ns_id;
+            if(oth->device == nsid->device 
+                && oth->inode == nsid->inode)
+            {
+                return entry->ns;
+            }
+        }
+    }
+    return NULL;
+}
+
 int new_ns_ls_entry(ns_ls_entry_t **ent)
 {
     ns_ls_entry_t *e = (ns_ls_entry_t *)calloc(1, sizeof(ns_ls_entry_t));
@@ -866,6 +896,24 @@ int add_ns(ns_info_t *nsinfo, int nsfd, int npid, zclk_command *cmd)
     {
         add_ns_to_ls(nsinfo, nsid, nsfd, cmd);
     }
+
+    if (npid > 0)
+    {
+        ns_t* ns = get_ns_for_id(nsinfo, nsid);
+        int *pidptr = (int *)calloc(1, sizeof(int));
+        *pidptr = npid;
+
+        /* adding pid to existing ns */
+        printf("Adding pid[%d] to namespace id [%zu %zu].\n",
+            npid, nsid->device, nsid->inode);
+        arraylist_add(ns->pids, pidptr);
+    }
+
+    if(find == 1)
+    {
+        free_ns_id(nsid);
+    }
+
     return 0;
 }
 
