@@ -48,6 +48,16 @@
 // NS paths construction
 #define PROC_DIR          "/proc"
 
+/* some terminal display constants */
+#define _TERM_ESC           ""
+#define _TERM_RED           ESC + "[31m"
+#define _TERM_YELLOW        ESC + "[93m"
+#define _TERM_BOLD          ESC + "[1m"
+#define _TERM_LIGHT_BLUE    ESC + "[38;5;51m"
+#define _TERM_NORMAL        ESC + "(B" + ESC + "[m"
+#define _TERM_PID_COLOR     LIGHT_BLUE
+#define _TERM_USERNS_COLOR  YELLOW + BOLD
+
 /**
  * Struct representing a namespace type in linux.
  * It has the flag used for namespace APIS, and the name of the namespace
@@ -259,7 +269,7 @@ int add_proc_ns(ns_info_t *nsinfo, char *pid, char *ns_file,
 
 int add_pinned_ns(ns_info_t *nsinfo, char *pid, zclk_command *cmd);
 
-int add_ns(ns_info_t *nsinfo, int nsfd, int npid, zclk_command *cmd);
+ns_id_t* add_ns(ns_info_t *nsinfo, int nsfd, int npid, zclk_command *cmd);
 
 int add_ns_to_ls(ns_info_t *nsinfo, ns_id_t *nsid, 
     int nsfd, zclk_command *cmd);
@@ -290,9 +300,54 @@ int get_ioctl(int fd, int op);
  */
 int get_creator_uid(int nsfd);
 
+/**
+ * @brief Display the namespace info heirarchy on the terminal
+ * 
+ * @param nsinfo ns info to display
+ * @param cmd the command line options
+ */
+void display_ns_heirarchies(ns_info_t *nsinfo, zclk_command *cmd);
+
+/**
+ * @brief recursively displays the namespace subtree inside nsinfo->ns_ls
+ * 
+ * @param nsinfo ns info to display
+ * @param nsid_to_show the namespace id to display
+ * @param level indentation level
+ * @param cmd the command line options
+ */
+void display_ns_tree(ns_info_t *nsinfo, ns_id_t *nsid_to_show,
+    int level, zclk_command *cmd);
+
+/**
+ * @brief Display the particular namespace
+ * 
+ * @param nsinfo ns info to display
+ * @param nsid_to_show the namespace id to display
+ * @param level indentation level
+ * @param cmd the command line options
+ */
+void display_ns(ns_info_t *nsinfo, ns_id_t *nsid_to_show,
+    int level, zclk_command *cmd);
+
+/**
+ * the invisible user ns, initialized to 0,0 in exns_main
+ */
+ns_id_t *invis_user_ns = NULL;
+
 zclk_res exns_main(zclk_command* cmd, void* handler_args)
 {
     int res;
+
+    /* init the special ns id */
+    invis_user_ns = (ns_id_t *)calloc(1, sizeof(ns_id_t));
+    if(invis_user_ns == NULL)
+    {
+        fprintf(stderr, "Unable to allocate struct ns_id_t!\n");
+        exit(1);
+    }
+    invis_user_ns->device = 0;
+    invis_user_ns->inode = 0;
 
     printf("Process PID = %d, PPID = %d\n", getpid(), getppid());
 
@@ -337,6 +392,9 @@ zclk_res exns_main(zclk_command* cmd, void* handler_args)
     /* add namespaces to nsinfo for all processes according to options */
     res = add_ns_for_all_procs(nsinfo, cmd);
 
+    /* display ns heirarchies */
+    display_ns_heirarchies(nsinfo, cmd);
+
     /* free the namespace info */
     free_ns_info(nsinfo);
 
@@ -359,7 +417,7 @@ int main(int argc, char *argv[])
 
     zclk_command_flag_option(
         cmd,
-        "--deep-scan",
+        "deep-scan",
         NULL,
         "Also show namespaces pinned into existence for reasons other"
         "than having member processes, being an owning user namespace,"
@@ -887,14 +945,14 @@ int add_proc_ns(ns_info_t *nsinfo, char *pid, char *ns_file, zclk_command *cmd, 
     }
 
     int npid = atoi(pid);
-    int res = add_ns(nsinfo, nsfd, npid, cmd);
+    add_ns(nsinfo, nsfd, npid, cmd);
 
     close(nsfd);
 
-    return res;
+    return 0;
 }
 
-int add_ns(ns_info_t *nsinfo, int nsfd, int npid, zclk_command *cmd)
+ns_id_t* add_ns(ns_info_t *nsinfo, int nsfd, int npid, zclk_command *cmd)
 {
     ns_id_t* nsid = new_ns_id(nsfd);
 
@@ -917,12 +975,9 @@ int add_ns(ns_info_t *nsinfo, int nsfd, int npid, zclk_command *cmd)
         arraylist_add(ns->pids, pidptr);
     }
 
-    if(find == 1)
-    {
-        free_ns_id(nsid);
-    }
-
-    return 0;
+    // TODO: nsid is created extra in case it is not found
+    // make sure to handle the deallocation at the appropriate time.
+    return nsid;
 }
 
 int add_pinned_ns(ns_info_t *nsinfo, char *pid, zclk_command *cmd)
@@ -996,6 +1051,70 @@ int add_ns_to_ls(ns_info_t *nsinfo, ns_id_t *nsid,
             fprintf(stderr, "Error getting parent ns %d\n", errno);
             exit(1);
         }
+
+        // we have an eperm error
+        if(entry->ns->ns_type == CLONE_NEWUSER || ioctl_op == NS_GET_PARENT)
+        {
+            // If the current namespace is a user namespace and
+			// NS_GET_USERNS fails with EPERM, or we are processing
+			// only PID namespaces and NS_GET_PARENT fails with
+			// EPERM, then this is the root namespace (or, at
+			// least, the topmost visible namespace); remember it.
+
+            nsinfo->root_ns = nsid;
+        }
+        else
+        {
+            // Otherwise, we are inspecting a nonuser namespace and
+			// NS_GET_USERNS failed with EPERM, meaning that the
+			// user namespace that owns this nonuser namespace is
+			// not visible (i.e., is an ancestor user namespace).
+			// Record these namespaces as children of a special
+			// entry in the 'nsList' map. (For an example, use:
+			// sudo unshare -Ur sh -c 'go run namespaces_of.go $$')
+
+            int find = has_ns_id(nsinfo, invis_user_ns);
+            ns_ls_entry_t *special_ns_entry;
+            ns_t *special_ns;
+            if(find == 0)
+            {
+                res = new_ns_ls_entry(&special_ns_entry);
+                if(res != 0)
+                {
+                    return res;
+                }
+
+                res = new_ns(&special_ns);
+                if(res != 0)
+                {
+                    return res;
+                }
+
+                special_ns_entry->ns = special_ns;
+                special_ns_entry->ns_id = invis_user_ns;
+                special_ns->ns_type = CLONE_NEWUSER;
+
+                arraylist_add(nsinfo->ns_ls, special_ns_entry);
+            }
+            special_ns = get_ns_for_id(nsinfo, invis_user_ns);
+            arraylist_add(special_ns->children, nsid);
+        }
+    }
+    else
+    {
+		// The ioctl() operation successfully returned a parent/owning
+		// namespace; make sure that namespace has an entry in the map.
+		// Specify the 'pid' argument as -1, meaning that there is no
+		// PID to be recorded as being a member of the parent/owning
+		// namespace.
+
+		ns_id_t* parent = add_ns(nsinfo, parent_fd, -1, cmd);
+
+		// Make the current namespace entry a child of the
+		// parent/owning namespace entry.
+
+        arraylist_add(get_ns_for_id(nsinfo, parent)->children, nsid);
+        close(parent_fd);
     }
 
     return 0;
@@ -1040,4 +1159,53 @@ int get_creator_uid(int nsfd)
     }
     
     return uid;
+}
+
+void display_ns_heirarchies(ns_info_t *nsinfo, zclk_command *cmd)
+{
+    printf("------------DISPLAY------------\n");
+
+    // TODO: subtree pid is not added to command, add it
+    // int subtree_pid;
+
+    // if there is no subtree specified.
+
+    display_ns_tree(nsinfo, nsinfo->root_ns, 0, cmd);
+
+    // Display the namespaces owned by (invisible) ancestor user
+    // namespaces.
+
+    int find = has_ns_id(nsinfo, invis_user_ns);
+    if(find != 0)
+    {
+        display_ns_tree(nsinfo, invis_user_ns, 0, cmd);
+    }
+}
+
+void display_ns_tree(ns_info_t *nsinfo, ns_id_t *nsid_to_show,
+    int level, zclk_command *cmd)
+{
+    ns_t *ns_to_show = get_ns_for_id(nsinfo, nsid_to_show);
+
+    // Display 'nsid' if its type is one of those specified in
+	// 'opts.namespaces', but always display user namespaces.
+
+    if(ns_to_show->ns_type == CLONE_NEWUSER)
+    {
+        display_ns(nsinfo, nsid_to_show, level, cmd);
+    }
+
+    size_t len = arraylist_length(ns_to_show->children);
+    for (size_t i = 0; i < len; i++)
+    {
+        ns_id_t *child = (ns_id_t *)arraylist_get(ns_to_show->children, i);
+        display_ns_tree(nsinfo, child, level + 1, cmd);
+    }
+}
+
+void display_ns(ns_info_t *nsinfo, ns_id_t *nsid_to_show,
+    int level, zclk_command *cmd)
+{
+    printf("displaying ns with id[%zu:%zu]\n", 
+        nsid_to_show->device, nsid_to_show->inode);
 }
